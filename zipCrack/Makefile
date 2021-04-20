@@ -277,7 +277,7 @@ endif
 # Target rules
 all: build
 
-build: zipCrack
+build: zipcrack
 
 check.deps:
 ifeq ($(SAMPLE_ENABLED),0)
@@ -286,7 +286,7 @@ else
 	@echo "Sample is ready - all dependencies have been met"
 endif
 
-zipCrack.o:zipcrack.cu
+zipcrack.o:zipcrack.cu
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
 zipcrack: zipcrack.o
