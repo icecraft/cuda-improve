@@ -40,8 +40,13 @@ void reset_key() {
         key2 = crc32(key1 >> 24, key2);
 }
 
+__attribute__ ((gnu_inline)) inline long decrpt_byte() {
+        long k;
+        k = key2 | 2;
+        return ((k * (k^1)) >> 8) & 0xFF;
+}
 
-void crack(int pwd[], int data[]) {
+void crack(int pwd[], int data[], int mayHeadfile[]) {
     reset_key();
     for (int i = 0; i <  6; i++) {
         update_keys(pwd[i]);
@@ -50,12 +55,17 @@ void crack(int pwd[], int data[]) {
     int k;
 
     for (int i = 0; i < 12; i++) {
-            k = key2 | 2;
-            data[i] ^= ((k * (k^1)) >> 8) & 0xFF;
+            data[i] ^= decrpt_byte();
             update_keys(data[i]);
             last = data[i];
     }
-    printf("%d\n", last);
+
+
+    for (int i = 0; i < 3; i++) {
+            mayHeadfile[i] ^= decrpt_byte();
+            update_keys(mayHeadfile[i]);
+            printf("%d\n", mayHeadfile[i]);
+    }
     return ;
 }
 
@@ -63,5 +73,7 @@ int main(int argc, char* argv[]) {
     
     int pwd[] = {49,50,51,52,53,54};
     int data[] = {0x2d, 0x40, 0xa2, 0x29, 0x41, 0x65, 0xf5, 0x78, 0xce, 0x92, 0x23, 0x40};
-    crack(pwd, data);
+    int mayHeadfile2[] = {0x0a, 0x0a, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x20, 0x68, 0x65, 0x61, 0x70, 0x71, 0x0a, 0x63};
+    int mayHeadfile[] = {0x09, 0x16, 0x4f};
+    crack(pwd, data, mayHeadfile);
 }
