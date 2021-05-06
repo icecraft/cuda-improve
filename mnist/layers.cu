@@ -91,7 +91,7 @@ template <int DATA_PER_THREAD> __global__ void train_mnist(void) {
   int seq = blockIdx.x * blockDim.x + threadIdx.x;
 
 float ret_fc1[H], ret_fc2[C], ret_relu[H], loss;
-float d_softmax[C], d_relu[H], d_fc2_w[C][H], d_fc2_b[C], d_fc2_data[C], d_fc1_w[H][D], d_fc1_c[H], d_fc1_data[H];
+float d_softmax[C], d_relu[H], d_fc2_w[C][H], d_fc2_b[C], d_fc2_data[C], d_fc1_w[H][D], d_fc1_b[H], d_fc1_data[H];
 float s_d_fc2_w[C][H]={0}, s_d_fc2_b[C]={0}, s_d_fc1_w[H][D]={0}, s_d_fc1_b[H]={0};
 
 #pragma unroll 
@@ -102,7 +102,7 @@ for (int i=seq*DATA_PER_THREAD; i < (seq+1)*DATA_PER_THREAD; i++) {
     affine_forward<C, H>(fc2, b2, ret_relu, ret_fc2);
 
     // get loss and grad
-    softmax_loss(ret_fc2, MNIST_label[i], &loss, d_softmax);
+    softmax_loss<C>(ret_fc2, MNIST_label[i], &loss, d_softmax);
 
     // backward
     affine_backward<C, H>(fc2, b2, ret_relu, d_softmax, d_fc2_data, d_fc2_b, d_fc2_w);
