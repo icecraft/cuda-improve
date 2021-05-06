@@ -87,7 +87,7 @@ float esum = 0;
     *loss = logf(esum/grad[label]);
 }
 
-template <int DATA_PER_THREAD> __global__ void train_mnist(void) {
+template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
   int seq = blockIdx.x * blockDim.x + threadIdx.x;
 
 float ret_fc1[H], ret_fc2[C], ret_relu[H], loss;
@@ -126,4 +126,11 @@ for (int i=seq*DATA_PER_THREAD; i < (seq+1)*DATA_PER_THREAD; i++) {
     }
 }
   return;
+}
+
+void train_mnist() {
+    
+  dim3 block(128, 1);
+  dim3 grid(14, 1);
+  train_mnist_cuda<33><<< grid, block >>>();  
 }
