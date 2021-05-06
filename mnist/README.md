@@ -57,3 +57,7 @@ print("loss: %f")
 * use mnist dataset
 
 * use cifar10 dataset
+
+* use dynamic parallelism  (p1 level)
+
+* use nvprof
