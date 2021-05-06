@@ -19,7 +19,7 @@ template <int H, int D> __device__ void affine_forward(float layer[H][D], float 
     for (int i =0; i < H; i++) {
         ret[i] = 0;
         for (int j = 0; j < D; j++) {
-            ret[i] += data[j] * layer[i][j] + bias[i]
+            ret[i] += data[j] * layer[i][j] + bias[i];
         }
     }
 }
@@ -77,7 +77,7 @@ float esum = 0;
 #pragma unroll
     for (int i=0; i < C; i++) {
         grad[i] =  expf(data[i]-mm);
-        esum += ret[i];
+        esum += grad[i];
     }
 
 #pragma unroll 
@@ -87,25 +87,18 @@ float esum = 0;
     *loss = logf(esum/grad[label]);
 }
 
-
-/*
-N = 59136
-D = 784
-H = 1000
-C = 10
-*/
 template <int DATA_PER_THREAD> __global__ void train_mnist(void) {
   int seq = blockIdx.x * blockDim.x + threadIdx.x;
 
 float ret_fc1[H], ret_fc2[C], ret_relu[H], loss;
-float d_softmax[C], d_relu[H], d_fc2_w[C][H], d_fc2_b[C], d_fc2_data[C], d_f1_w[H][D], d_f1_c[H], d_f1_data[H];
-float s_d_fc2_w[C][H]={0}, s_d_fc2_b[c]={0}, s_d_fc1_w[H][D]={0}, s_d_fc1_b[H]={0};
+float d_softmax[C], d_relu[H], d_fc2_w[C][H], d_fc2_b[C], d_fc2_data[C], d_fc1_w[H][D], d_fc1_c[H], d_fc1_data[H];
+float s_d_fc2_w[C][H]={0}, s_d_fc2_b[C]={0}, s_d_fc1_w[H][D]={0}, s_d_fc1_b[H]={0};
 
 #pragma unroll 
 for (int i=seq*DATA_PER_THREAD; i < (seq+1)*DATA_PER_THREAD; i++) {
     // forward
     affine_forward<H, D>(fc1, b1, MNIST_data[i], ret_fc1);
-    relu_forward(ret_fc1, ret_relu);
+    relu_forward<H>(ret_fc1, ret_relu);
     affine_forward<C, H>(fc2, b2, ret_relu, ret_fc2);
 
     // get loss and grad
@@ -113,7 +106,7 @@ for (int i=seq*DATA_PER_THREAD; i < (seq+1)*DATA_PER_THREAD; i++) {
 
     // backward
     affine_backward<C, H>(fc2, b2, ret_relu, d_softmax, d_fc2_data, d_fc2_b, d_fc2_w);
-    relu_backward(ret_fc1, d_fc2_data, d_relu);
+    relu_backward<H>(ret_fc1, d_fc2_data, d_relu);
     affine_backward<H, D>(fc1, b1, MNIST_data[i], d_relu, d_fc1_data, d_fc1_b, d_fc1_w);
 
     // sum grad and bias
