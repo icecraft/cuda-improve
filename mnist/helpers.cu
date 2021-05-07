@@ -9,10 +9,10 @@
 #include <helper_cuda.h>
 
 void get_mnist_grad() {
-    checkCudaErrors(cudaMemcpy(h_g_d_fc1_w, d_g_d_fc1_w, H*D*sizeof(float)), cudaMemcpyDeviceToHost);
-    checkCudaErrors(cudaMemcpy(h_g_d_fc1_b, d_g_d_fc1_b, H*sizeof(float)), cudaMemcpyDeviceToHost);
-    checkCudaErrors(cudaMemcpy(h_g_d_fc2_w, d_g_d_fc2_w, H*C*sizeof(float)), cudaMemcpyDeviceToHost);
-    checkCudaErrors(cudaMemcpy(h_g_d_fc2_b, d_g_d_fc2_b, C*sizeof(float)), cudaMemcpyDeviceToHost);
+    checkCudaErrors(cudaMemcpy(h_g_d_fc1_w, d_g_d_fc1_w, H*D*sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(h_g_d_fc1_b, d_g_d_fc1_b, H*sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(h_g_d_fc2_w, d_g_d_fc2_w, H*C*sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(h_g_d_fc2_b, d_g_d_fc2_b, C*sizeof(float), cudaMemcpyDeviceToHost));
 }
 
 void reset_mnist_grad() {
@@ -21,10 +21,10 @@ void reset_mnist_grad() {
     memset(h_g_d_fc2_w, 0, C*H*sizeof(float));
     memset(h_g_d_fc2_b, 0, C*sizeof(float));
 
-    checkCudaErrors(cudaMemcpy(d_g_d_fc1_w, h_g_d_fc1_w, H*D*sizeof(float)), cudaMemcpyHostToDevice);
-    checkCudaErrors(cudaMemcpy(d_g_d_fc1_b, h_g_d_fc1_b, H*sizeof(float)), cudaMemcpyHostToDevice);
-    checkCudaErrors(cudaMemcpy(d_g_d_fc2_w, h_g_d_fc2_w, H*C*sizeof(float)), cudaMemcpyHostToDevice);
-    checkCudaErrors(cudaMemcpy(d_g_d_fc2_b, h_g_d_fc2_b, C*sizeof(float)), cudaMemcpyHostToDevice);
+    checkCudaErrors(cudaMemcpy(d_g_d_fc1_w, h_g_d_fc1_w, H*D*sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_g_d_fc1_b, h_g_d_fc1_b, H*sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_g_d_fc2_w, h_g_d_fc2_w, H*C*sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_g_d_fc2_b, h_g_d_fc2_b, C*sizeof(float), cudaMemcpyHostToDevice));
 }
 
 template <int N, int M> void __global__ init_affine_layer(float layer[N][M], int size, curandState state[]) {
@@ -69,10 +69,10 @@ void init_mnist_network() {
     init_bias<<<fc2_grid_b, fc2_block_b>>>(b2, 1, d_state);
 
     // sync data from gpu to cpu 
-    checkCudaErrors(cudaMemcpy(&h_fc1, fc1, H * D * sizeof(float)), cudaMemcpyDeviceToHost);
-    checkCudaErrors(cudaMemcpy(&h_b1, b1, H * sizeof(float)), cudaMemcpyDeviceToHost);
-    checkCudaErrors(cudaMemcpy(&h_fc2, fc2, C * H * sizeof(float)), cudaMemcpyDeviceToHost);
-    checkCudaErrors(cudaMemcpy(&h_b2, b2, C * sizeof(float)), cudaMemcpyDeviceToHost);
+    checkCudaErrors(cudaMemcpy(&h_fc1, fc1, H * D * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(&h_b1, b1, H * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(&h_fc2, fc2, C * H * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(&h_b2, b2, C * sizeof(float), cudaMemcpyDeviceToHost));
 
     // free resource
     checkCudaErrors(cudaFree(&d_state));
@@ -80,10 +80,10 @@ void init_mnist_network() {
 
 
 void sync_mnist_model_to_gpu() {
-    checkCudaErrors(cudaMemcpy(fc1, h_fc1, H * D * sizeof(float)), cudaMemcpyHostToDevice);
-    checkCudaErrors(cudaMemcpy(b1, h_b1, H * sizeof(float)), cudaMemcpyHostToDevice);
-    checkCudaErrors(cudaMemcpy(fc2, h_fc2, C * H * sizeof(float)), cudaMemcpyHostToDevice);
-    checkCudaErrors(cudaMemcpy(b2, h_b2, C * sizeof(float)), cudaMemcpyHostToDevice);
+    checkCudaErrors(cudaMemcpy(fc1, h_fc1, H * D * sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(b1, h_b1, H * sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(fc2, h_fc2, C * H * sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(b2, h_b2, C * sizeof(float), cudaMemcpyHostToDevice));
 }
 
 
