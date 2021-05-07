@@ -140,8 +140,8 @@ void train_mnist() {
     dim3 grid(14, 1);
 
     // train 10 epoch for test
-    for (int i=0; i<1; i< 10) {
+    for (int i=0; i<1; i++) {
         train_mnist_cuda<33><<< grid, block >>>();  
-        update_mnist_model();
+        update_mnist_model(0.02);
     }
 }
