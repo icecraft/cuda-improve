@@ -1,6 +1,7 @@
 
 project('simple', 'cpp', 'cuda', version : '0.1.0')
 incdir = include_directories('../Common')
+add_global_arguments('-rdc=true', language : 'cuda')
 cuda_dep = dependency('cuda', version : '>=10', modules : ['cublas'])
 src = ['mnist.cu', 'layers.cu', 'helpers.cu', 'shared.cu']
 

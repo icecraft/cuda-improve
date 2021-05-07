@@ -9,10 +9,10 @@
 #include <helper_cuda.h>
 
 void get_mnist_grad() {
-    checkCudaErrors(cudaMemcpyFromSymbol(h_g_d_fc1_w, &d_g_d_fc1_w, H*D*sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(h_g_d_fc1_b, &d_g_d_fc1_b, H*sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(h_g_d_fc2_w, &d_g_d_fc2_w, H*C*sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(h_g_d_fc2_b, &d_g_d_fc2_b, C*sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc1_w, d_g_d_fc1_w, H*D*sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc1_b, d_g_d_fc1_b, H*sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc2_w, d_g_d_fc2_w, H*C*sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc2_b, d_g_d_fc2_b, C*sizeof(float)));
 }
 
 void reset_mnist_grad() {
@@ -69,10 +69,10 @@ void init_mnist_network() {
     init_bias<<<fc2_grid_b, fc2_block_b>>>(b2, 1, d_state);
 
     // sync data from gpu to cpu 
-    checkCudaErrors(cudaMemcpyFromSymbol(h_fc1, &fc1, H * D * sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(h_b1, &b1, H * sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(h_fc2, &fc2, C * H * sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(h_b2, &b2, C * sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_fc1, fc1, H * D * sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_b1, b1, H * sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_fc2, fc2, C * H * sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_b2, b2, C * sizeof(float)));
 
     // free resource
     checkCudaErrors(cudaFree(&d_state));

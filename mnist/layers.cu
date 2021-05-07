@@ -11,7 +11,8 @@
 #include <helper_cuda.h>
 
 # include "config.h"
-# include "helpers.hbp"
+# include "helpers.h"
+# include "shared.h"
 # include "dataset.h"
 
 template <int N, int M> __device__ void affine_forward(float layer[N][M], float bias[N], float data[M], float ret[N]) {
