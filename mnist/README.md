@@ -61,3 +61,7 @@ print("loss: %f")
 * use dynamic parallelism  (p1 level)
 
 * use nvprof
+
+## 总结
+
+* 本实现性能不好，L1 和 L2 cache、shared memory 均不能起到有效的作用。 constant memory 完全没有被使用到
