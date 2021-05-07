@@ -12,7 +12,8 @@
 
 # include "config.h"
 # include "helpers.h"
-
+# include "shared.h"
+# include "dataset.h"
 
 template <int N, int M> __device__ void affine_forward(float layer[N][M], float bias[N], float data[M], float ret[N]) {
 #pragma unroll
@@ -125,6 +126,23 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
             s_d_fc2_b[j] += d_fc2_b[j]/NN;
         }
     }
+
+    // cuda write need lock ?
+    // sum fc1 network grad
+    for (int j=0; j<H; j++) {
+        for (int k=0; k<D; k++) {
+             d_g_d_fc1_w[j][k] += s_d_fc1_w[j][k];
+        }
+        d_g_d_fc1_b[j] +=  s_d_fc1_b[j];
+    }
+
+    // sum fc2 network grad
+    for (int j=0; j<C; j++) {
+        for (int k=0; k<H; k++) {
+            d_g_d_fc2_w[j][k] += s_d_fc2_w[j][k];
+        }
+        d_g_d_fc2_b[j] += s_d_fc2_b[j];
+    }
   return;
 }
 
@@ -132,6 +150,9 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
 void train_mnist() {
     
     // load mnist data to gpu
+    load_mnist();
+    checkCudaErrors(cudaMemcpyToSymbol(MNIST_data, &train_image, NN * D * sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(MNIST_label, &train_label, NN * sizeof(int)));
 
     // random initialize fc1, fc2
     init_mnist_network();

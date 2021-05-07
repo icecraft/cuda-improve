@@ -1,7 +1,14 @@
 
 # mnist
 
-## drawft
+## usage
+
+```bash
+meson build
+ninja -C build
+```
+
+## draft
 
 ```text
 train data num: 59136 = 128 (threads) * 14 (sms) * 33 (the nums per thread processed)

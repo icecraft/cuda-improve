@@ -1,6 +1,6 @@
 #ifndef MY_SHARED_H_
 #define MY_SHARED_H_
-
+# include "config.h"
 
 extern __device__ float MNIST_data[NN][D];
 extern __device__ int MNIST_label[NN];

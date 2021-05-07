@@ -1,7 +1,8 @@
 
 # include "config.h"
-# include <cuda_runtime.h>
+# include "shared.h"
 
+# include <cuda_runtime.h>
 #include <curand.h>
 #include <curand_kernel.h>
 #include <helper_functions.h>
