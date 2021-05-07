@@ -61,7 +61,7 @@ void init_mnist_network() {
     // init fc2 
     dim3 fc2_block_w(100, 1);
     dim3 fc2_grid_w(20, 1);
-    init_affine_layer<1000, 10><<<fc2_grid_w, fc2_block_w>>>(fc2, 5, d_state);
+    init_affine_layer<C, H><<<fc2_grid_w, fc2_block_w>>>(fc2, 5, d_state);
 
     dim3 fc2_block_b(10, 1);
     dim3 fc2_grid_b(1, 1);
