@@ -62,7 +62,7 @@ void FlipLong(unsigned char * ptr)
 }
 
 
-<template int N> void read_mnist_char(char *file_path, int num_data, int len_info, int arr_n, unsigned char data_char[][N], int info_arr[])
+template <int N> void read_mnist_char(char *file_path, int num_data, int len_info, int arr_n, unsigned char data_char[][N], int info_arr[])
 {
     int fd;
     unsigned char *ptr;

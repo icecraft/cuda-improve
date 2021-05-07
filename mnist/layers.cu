@@ -129,14 +129,16 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
 
     // cuda write need lock ?
     // sum fc1 network grad
+#pragma unroll 
     for (int j=0; j<H; j++) {
         for (int k=0; k<D; k++) {
              d_g_d_fc1_w[j][k] += s_d_fc1_w[j][k];
         }
-        d_g_d_fc1_b[j] +=  s_d_fc1_b[j];
+        d_g_d_fc1_b[j] += s_d_fc1_b[j];
     }
 
     // sum fc2 network grad
+#pragma unroll 
     for (int j=0; j<C; j++) {
         for (int k=0; k<H; k++) {
             d_g_d_fc2_w[j][k] += s_d_fc2_w[j][k];
