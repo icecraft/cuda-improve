@@ -11,8 +11,7 @@
 #include <helper_cuda.h>
 
 # include "config.h"
-# include "helpers.h"
-# include "shared.h"
+# include "helpers.hbp"
 # include "dataset.h"
 
 template <int N, int M> __device__ void affine_forward(float layer[N][M], float bias[N], float data[M], float ret[N]) {
@@ -153,8 +152,8 @@ void train_mnist() {
     
     // load mnist data to gpu
     load_mnist();
-    checkCudaErrors(cudaMemcpy(MNIST_data, &train_image, NN * D * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpy(MNIST_label, &train_label, NN * sizeof(int), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpyToSymbol(MNIST_data, &train_image, NN * D * sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(MNIST_label, &train_label, NN * sizeof(int)));
 
     // random initialize fc1, fc2
     init_mnist_network();
