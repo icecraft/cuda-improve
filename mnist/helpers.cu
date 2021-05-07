@@ -28,19 +28,19 @@ void reset_mnist_grad() {
 
 template <int N, int M> void __global__ init_affine_layer(float layer[N][M], int size, curandState state[]) {
     int seq = blockIdx.x * blockDim.x * blockDim.y + threadIdx.x;
-    curand_init(1234, seq, 0, &state[idx]);
+    curand_init(1234, seq, 0, &state[seq]);
 #pragma unroll
     for (int i=seq*size; i<(seq+1)*size; i++) {
-        layer[i/M][i%M] = curand_uniform(state+idx);
+        layer[i/M][i%M] = curand_uniform(state+seq);
     }
 }
 
 void __global__ init_bias(float bias[], int size, curandState state[]) {
     int seq = blockIdx.x * blockDim.x + threadIdx.x;
-    curand_init(1234, seq, 0, &state[idx]);
+    curand_init(1234, seq, 0, &state[seq]);
 #pragma unroll
     for (int i=seq*size; i<(seq+1)*size; i++) {
-        bias[i] = curand_uniform(state+idx);
+        bias[i] = curand_uniform(state+seq);
     }
 }
 
@@ -64,7 +64,7 @@ void init_mnist_network() {
     init_affine_layer<1000, 10><<<fc2_grid_w, fc2_block_w>>>(fc2, 5, d_state);
 
     dim3 fc2_block_b(10, 1);
-    dim3 fc2_grid_w(1, 1);
+    dim3 fc2_grid_b(1, 1);
     init_bias<<<fc2_grid_b, fc2_block_b>>>(b2, 1, d_state);
 
     // sync data from gpu to cpu 

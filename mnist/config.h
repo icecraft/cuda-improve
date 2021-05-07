@@ -29,7 +29,7 @@ __device__ float d_g_d_fc2_b[C];
 float h_g_d_fc1_w[H][D];
 float h_g_d_fc1_b[H];
 float h_g_d_fc2_w[C][H];
-float h_g_d_fc2_b[C]
+float h_g_d_fc2_b[C];
 
 
 #endif 

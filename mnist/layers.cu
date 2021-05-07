@@ -112,17 +112,17 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
         // sum grad and bias
         for (int j=0; j<H; j++) {
             for (int k=0; k<D; k++) {
-                s_d_fc1_w[j][k] += d_fc1_w[j][k]/N;
+                s_d_fc1_w[j][k] += d_fc1_w[j][k]/NN;
             }
-            s_d_fc1_b[j] += d_fc1_b[j]/N;
+            s_d_fc1_b[j] += d_fc1_b[j]/NN;
         }
 
             // sum grad and bias
         for (int j=0; j<C; j++) {
             for (int k=0; k<H; k++) {
-                s_d_fc2_w[j][k] += d_fc2_w[j][k]/N;
+                s_d_fc2_w[j][k] += d_fc2_w[j][k]/NN;
             }
-            s_d_fc2_b[j] += d_fc2_b[j]/N;
+            s_d_fc2_b[j] += d_fc2_b[j]/NN;
         }
     }
   return;
