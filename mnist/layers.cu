@@ -153,8 +153,8 @@ void train_mnist() {
     
     // load mnist data to gpu
     load_mnist();
-    checkCudaErrors(cudaMemcpy(MNIST_data, train_image, NN * D * sizeof(float), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpy(MNIST_label, train_label, NN * sizeof(int), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(MNIST_data, &train_image, NN * D * sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(MNIST_label, &train_label, NN * sizeof(int), cudaMemcpyHostToDevice));
 
     // random initialize fc1, fc2
     init_mnist_network();
