@@ -91,7 +91,7 @@ float esum = 0;
 template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
     int seq = blockIdx.x * blockDim.x + threadIdx.x;
 
-    float ret_fc1[H], ret_fc2[C], ret_relu[H], loss;
+    float ret_fc1[H], ret_fc2[C], ret_relu[H], loss, total_loss=0;
     float d_softmax[C], d_relu[H], d_fc2_w[C][H], d_fc2_b[C], d_fc2_data[C], d_fc1_w[H][D], d_fc1_b[H], d_fc1_data[H];
     float s_d_fc2_w[C][H]={0}, s_d_fc2_b[C]={0}, s_d_fc1_w[H][D]={0}, s_d_fc1_b[H]={0};
 
@@ -104,7 +104,7 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
 
         // get loss and grad
         softmax_loss<C>(ret_fc2, MNIST_label[i], &loss, d_softmax);
-
+        total_loss += loss;
         // backward
         affine_backward<C, H>(fc2, b2, ret_relu, d_softmax, d_fc2_data, d_fc2_b, d_fc2_w);
         relu_backward<H>(ret_fc1, d_fc2_data, d_relu);
@@ -132,8 +132,10 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
 #pragma unroll 
     for (int j=0; j<H; j++) {
         for (int k=0; k<D; k++) {
+              __threadfence();
              d_g_d_fc1_w[j][k] += s_d_fc1_w[j][k];
         }
+          __threadfence();
         d_g_d_fc1_b[j] += s_d_fc1_b[j];
     }
 
@@ -141,10 +143,14 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
 #pragma unroll 
     for (int j=0; j<C; j++) {
         for (int k=0; k<H; k++) {
+              __threadfence();
             d_g_d_fc2_w[j][k] += s_d_fc2_w[j][k];
         }
+          __threadfence();
         d_g_d_fc2_b[j] += s_d_fc2_b[j];
     }
+  __threadfence();
+    h_loss += total_loss;
   return;
 }
 
