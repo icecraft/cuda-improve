@@ -123,7 +123,6 @@ float esum = 0;
     for (int i=0; i < N; i++) {
         grad[i] = grad[i]/esum -1;
     }
-    printf("%f %f\n", mm, data[label]);
     *loss = logf(esum/grad[label]);
 }
 
@@ -194,6 +193,31 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
 }
 
 
+template <int DATA_PER_THREAD> __global__ void train_mnist_cuda2(void) {
+    int seq = blockIdx.x * blockDim.x + threadIdx.x;
+
+    float ret_fc1[H], ret_fc2[C], ret_relu[H], loss, total_loss=0;
+    float d_softmax[C], d_relu[H], d_fc2_w[C][H], d_fc2_b[C], d_fc2_data[C], d_fc1_w[H][D], d_fc1_b[H], d_fc1_data[H];
+    float s_d_fc2_w[C][H]={0}, s_d_fc2_b[C]={0}, s_d_fc1_w[H][D]={0}, s_d_fc1_b[H]={0};
+
+    for (int i=seq*DATA_PER_THREAD; i < (seq+1)*DATA_PER_THREAD; i++) {
+        // forward
+        affine_forward_fc1<H, D>(MNIST_data[i], ret_fc1);
+        relu_forward<H>(ret_fc1, ret_relu);
+        affine_forward_fc2<C, H>(ret_relu, ret_fc2);
+
+        // get loss and grad
+        softmax_loss<C>(ret_fc2, MNIST_label[i], &loss, d_softmax);
+        total_loss += loss;
+        // backward
+        affine_backward_fc1<C, H>(ret_relu, d_softmax, d_fc2_data, d_fc2_b, d_fc2_w);
+        relu_backward<H>(ret_fc1, d_fc2_data, d_relu);
+        affine_backward_fc2<H, D>(MNIST_data[i], d_relu, d_fc1_data, d_fc1_b, d_fc1_w);
+
+    }
+}
+
+
 void train_mnist() {
     
     // load mnist data to gpu
@@ -209,7 +233,8 @@ void train_mnist() {
 
     // train 10 epoch for test
     for (int i=0; i<10; i++) {
-        train_mnist_cuda<33><<< grid, block >>>();  
+        train_mnist_cuda2<33><<< grid, block >>>(); 
+        cudaDeviceSynchronize(); 
         update_mnist_model(0.02);
     }
 }

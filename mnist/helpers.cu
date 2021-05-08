@@ -106,9 +106,6 @@ void init_mnist_network() {
 
     // free resource
     checkCudaErrors(cudaFree(d_state));
-
-    randomDumpMatrixEle<H,D> (h_fc1, 20);
-    randomDumpMatrixEle<C, H> (h_fc2, 20);
 }
 
 
