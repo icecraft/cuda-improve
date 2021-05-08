@@ -15,23 +15,61 @@
 # include "shared.h"
 # include "dataset.h"
 
-template <int N, int M> __device__ void affine_forward(float layer[N][M], float bias[N], float data[M], float ret[N]) {
+template <int N, int M> __device__ void affine_forward_fc1(float data[M], float ret[N]) {
 #pragma unroll
     for (int i =0; i < N; i++) {
         ret[i] = 0;
         for (int j = 0; j < M; j++) {
-            ret[i] += data[j] * layer[i][j] + bias[i];
+            ret[i] += data[j] * fc1[i][j] + b1[i];
         }
     }
 }
 
-template <int N, int M> __device__ void affine_backward(float layer[N][M], float bias[N], float data[M], float dout[N], float ddata[M], float dbias[N], float dlayer[N][M]) {
+template <int N, int M> __device__ void affine_forward_fc2(float data[M], float ret[N]) {
+#pragma unroll
+    for (int i =0; i < N; i++) {
+        ret[i] = 0;
+        for (int j = 0; j < M; j++) {
+            ret[i] += data[j] * fc2[i][j] + b2[i];
+        }
+    }
+}
+
+template <int N, int M> __device__ void affine_backward_fc1(float data[M], float dout[N], float ddata[M], float dbias[N], float dlayer[N][M]) {
 // get deviration of input data
 #pragma unroll
 for (int i=0; i < M; i++) {
     ddata[i] = 0;
     for (int j=0; j < N; j++) {
-        ddata[i] += dout[j] * layer[j][i];
+        ddata[i] += dout[j] * fc1[j][i];
+    }
+}
+
+// get deviration of bias
+#pragma unroll
+for (int i=0; i < N; i++) {
+    dbias[i] = 0;
+    for (int j=0; j < M; j++) {
+        dbias[i] += dout[i];
+    }
+}
+
+// get deviration of matrix
+#pragma unroll
+for (int i=0; i < N; i++) {
+    for (int j=0; j < M; j++) {
+        dlayer[i][j] = dout[i] * data[j];
+    }
+}
+}
+
+template <int N, int M> __device__ void affine_backward_fc2(float data[M], float dout[N], float ddata[M], float dbias[N], float dlayer[N][M]) {
+// get deviration of input data
+#pragma unroll
+for (int i=0; i < M; i++) {
+    ddata[i] = 0;
+    for (int j=0; j < N; j++) {
+        ddata[i] += dout[j] * fc2[j][i];
     }
 }
 
@@ -98,17 +136,17 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
 #pragma unroll 
     for (int i=seq*DATA_PER_THREAD; i < (seq+1)*DATA_PER_THREAD; i++) {
         // forward
-        affine_forward<H, D>(fc1, b1, MNIST_data[i], ret_fc1);
+        affine_forward_fc1<H, D>(MNIST_data[i], ret_fc1);
         relu_forward<H>(ret_fc1, ret_relu);
-        affine_forward<C, H>(fc2, b2, ret_relu, ret_fc2);
+        affine_forward_fc2<C, H>(ret_relu, ret_fc2);
 
         // get loss and grad
         softmax_loss<C>(ret_fc2, MNIST_label[i], &loss, d_softmax);
         total_loss += loss;
         // backward
-        affine_backward<C, H>(fc2, b2, ret_relu, d_softmax, d_fc2_data, d_fc2_b, d_fc2_w);
+        affine_backward_fc1<C, H>(ret_relu, d_softmax, d_fc2_data, d_fc2_b, d_fc2_w);
         relu_backward<H>(ret_fc1, d_fc2_data, d_relu);
-        affine_backward<H, D>(fc1, b1, MNIST_data[i], d_relu, d_fc1_data, d_fc1_b, d_fc1_w);
+        affine_backward_fc2<H, D>(MNIST_data[i], d_relu, d_fc1_data, d_fc1_b, d_fc1_w);
 
         // sum grad and bias
         for (int j=0; j<H; j++) {

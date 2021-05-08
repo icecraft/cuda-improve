@@ -9,7 +9,7 @@
 #include <helper_cuda.h>
 #include <stdlib.h>
 
-template <int N, int M> randomDumpMatrixEle(float layer [][M], int nums) {
+template <int N, int M> void randomDumpMatrixEle(float layer [][M], int nums) {
     int total = N * M, tmp;
     for (int i=0; i < nums; i++) {
         tmp = rand() % total;
@@ -136,7 +136,6 @@ template <int N> void update_array(float darr[N], float det[N], float lr) {
 
 void update_mnist_model(float lr) {
     get_mnist_grad();
-    
     printf("loss: %f\n", h_loss);
 
     update_matrix<H, D>(h_fc1, h_g_d_fc1_w, lr);
