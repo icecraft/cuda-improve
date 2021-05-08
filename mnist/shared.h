@@ -4,6 +4,8 @@
 
 extern __device__ float MNIST_data[NN][D];
 extern __device__ int MNIST_label[NN];
+extern __device__ float Mtest_data[TNN][D];
+extern __device__ int Mtest_label[TNN];
 
 extern __device__ float fc1[H][D];
 extern __device__ float b1[H];

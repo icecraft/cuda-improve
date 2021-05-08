@@ -199,18 +199,18 @@ template <int DATA_PER_THREAD> __global__ void predict_mnist_cuda(void) {
 #pragma unroll 
     for (int i=seq*DATA_PER_THREAD; i < (seq+1)*DATA_PER_THREAD; i++) {
         // forward
-        affine_forward_fc1<H, D>(MNIST_[i], ret_fc1);
+        affine_forward_fc1<H, D>(Mtest_data[i], ret_fc1);
         relu_forward<H>(ret_fc1, ret_relu);
         affine_forward_fc2<C, H>(ret_relu, ret_fc2);
 
  
         #pragma unroll
-        label_index = MNIST_label[i]
+        label_index = Mtest_label[i];
         tmp = ret_fc2[label_index];
         mm = tmp;
-        ret_fc2[label_index] = 0
+        ret_fc2[label_index] = 0;
 
-        for (int i=0; i < N; i++) {
+        for (int i=0; i < C; i++) {
             tmp = fmaxf(tmp, ret_fc2[i]);
         }
         count += mm == tmp ? 1 : 0;
@@ -226,8 +226,8 @@ void train_mnist() {
     load_mnist();
     checkCudaErrors(cudaMemcpyToSymbol(MNIST_data, &train_image, NN * D * sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(MNIST_label, &train_label, NN * sizeof(int)));
-    checkCudaErrors(cudaMemcpyToSymbol(test_data, &test_image, TNN * D * sizeof(float)));
-    checkCudaErrors(cudaMemcpyToSymbol(test_label, &test_label, TNN * sizeof(int)));
+    checkCudaErrors(cudaMemcpyToSymbol(Mtest_data, &test_image, TNN * D * sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(Mtest_label, &test_label, TNN * sizeof(int)));
 
     // random initialize fc1, fc2
     init_mnist_network();
