@@ -4,7 +4,7 @@
 
 const int NN = 59136;
 const int D = 784;
-const int H = 1000;
+const int H = 30;
 const int C = 10;
 
 #endif

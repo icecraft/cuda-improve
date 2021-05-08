@@ -118,12 +118,13 @@ float esum = 0;
         grad[i] =  expf(data[i]-mm);
         esum += grad[i];
     }
+*loss = logf(esum/grad[label]);
 
 #pragma unroll 
     for (int i=0; i < N; i++) {
-        grad[i] = grad[i]/esum -1;
+        grad[i] = grad[i]/esum;
     }
-    *loss = logf(esum/grad[label]);
+    grad[label] -= 1;
 }
 
 template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
