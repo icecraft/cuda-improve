@@ -24,6 +24,7 @@ void get_mnist_grad() {
     checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc2_w, d_g_d_fc2_w, H*C*sizeof(float)));
     checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc2_b, d_g_d_fc2_b, C*sizeof(float)));
     checkCudaErrors(cudaMemcpyFromSymbol(&h_loss, d_loss, sizeof(float)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_count, d_count, sizeof(int)));
 }
 
 void reset_mnist_grad() {
@@ -32,12 +33,14 @@ void reset_mnist_grad() {
     memset(h_g_d_fc2_w, 0, C*H*sizeof(float));
     memset(h_g_d_fc2_b, 0, C*sizeof(float));
     h_loss = 0;
+    h_count = 0;
 
     checkCudaErrors(cudaMemcpyToSymbol(d_g_d_fc1_w, &h_g_d_fc1_w, H*D*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(d_g_d_fc1_b, &h_g_d_fc1_b, H*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(d_g_d_fc2_w, &h_g_d_fc2_w, H*C*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(d_g_d_fc2_b, &h_g_d_fc2_b, C*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(d_loss, &h_loss, sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(d_count, &h_count, sizeof(int)));
 }
 
 template <int M> __global__ void init_affine_layer_fc1(int size, curandState state[]) {
@@ -133,7 +136,7 @@ template <int N> void update_array(float darr[N], float det[N], float lr) {
 
 void update_mnist_model(float lr) {
     get_mnist_grad();
-    printf("loss: %f\n", h_loss);
+    printf("loss: %f, accuracy: %f\n", h_loss, float(h_count)/TNN);
 
     update_matrix<H, D>(h_fc1, h_g_d_fc1_w, lr);
     update_array<H>(h_b1, h_g_d_fc1_b, lr);

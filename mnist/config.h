@@ -7,4 +7,5 @@ const int D = 784;
 const int H = 30;
 const int C = 10;
 
+const int TNN = 9600;
 #endif
