@@ -7,6 +7,7 @@
 #include <curand_kernel.h>
 #include <helper_functions.h>
 #include <helper_cuda.h>
+#include <stdlib.h>
 
 void get_mnist_grad() {
     checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc1_w, d_g_d_fc1_w, H*D*sizeof(float)));
@@ -96,6 +97,9 @@ void init_mnist_network() {
 
     // free resource
     checkCudaErrors(cudaFree(d_state));
+
+    randomDumpMatrixEle<H,D> (h_fc1, 20);
+    randomDumpMatrixEle<C, H> (h_fc2, 20);
 }
 
 
@@ -125,7 +129,7 @@ void update_mnist_model(float lr) {
     get_mnist_grad();
     
     printf("loss: %f\n", h_loss);
-    
+
     update_matrix<H, D>(h_fc1, h_g_d_fc1_w, lr);
     update_array<H>(h_b1, h_g_d_fc1_b, lr);
     update_matrix<C, H>(h_fc2, h_g_d_fc2_w, lr);
@@ -136,3 +140,12 @@ void update_mnist_model(float lr) {
 }
 
 
+
+template <int N, int M> randomDumpMatrixEle(float layer [][M], int nums) {
+    int total = N * M, tmp;
+    for (int i=0; i < nums; i++) {
+        tmp = rand() % total;
+        printf(" %f ", layer[tmp/M][tmp%M]);
+    }
+    printf("\n");
+}

@@ -15,7 +15,7 @@ extern float h_fc1[H][D];
 extern float h_b1[H];
 extern float h_fc2[C][H];
 extern float h_b2[C];
-extern __device__ float h_loss;
+extern float h_loss;
 
 extern __device__ float d_g_d_fc1_w[H][D]; // device(d) global(g) deviration(d)
 extern __device__ float d_g_d_fc1_b[H];

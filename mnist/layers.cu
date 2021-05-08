@@ -150,7 +150,7 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
         d_g_d_fc2_b[j] += s_d_fc2_b[j];
     }
   __threadfence();
-    h_loss += total_loss;
+    d_loss += total_loss;
   return;
 }
 
@@ -169,7 +169,7 @@ void train_mnist() {
     dim3 grid(14, 1);
 
     // train 10 epoch for test
-    for (int i=0; i<1; i++) {
+    for (int i=0; i<10; i++) {
         train_mnist_cuda<33><<< grid, block >>>();  
         update_mnist_model(0.02);
     }
