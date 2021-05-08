@@ -27,7 +27,7 @@ void reset_mnist_grad() {
     checkCudaErrors(cudaMemcpyToSymbol(d_g_d_fc2_b, &h_g_d_fc2_b, C*sizeof(float)));
 }
 
-template <int N, int M> void __global__ init_affine_layer(float layer[N][M], int size, curandState state[]) {
+template <int M> void __global__ init_affine_layer_fc1(float layer[][M], int size, curandState state[]) {
     int seq = blockIdx.x * blockDim.x * blockDim.y + threadIdx.x;
     curand_init(1234, seq, 0, &state[seq]);
 #pragma unroll
@@ -35,6 +35,7 @@ template <int N, int M> void __global__ init_affine_layer(float layer[N][M], int
         layer[i/M][i%M] = curand_uniform(state+seq);
     }
 }
+
 
 void __global__ init_bias(float bias[], int size, curandState state[]) {
     int seq = blockIdx.x * blockDim.x + threadIdx.x;
@@ -50,23 +51,34 @@ void init_mnist_network() {
     curandState *d_state;
     checkCudaErrors(cudaMalloc(&d_state, 128 * 49 * sizeof(curandState)));
 
+    float* w_arr[], *b_arr;
+
     // init fc1 
     dim3 fc1_block_w(128, 1);
     dim3 fc1_grid_w(49, 1);
-    init_affine_layer<H, D><<<fc1_grid_w, fc1_block_w>>>(fc1, 125, d_state);
+    checkCudaErrors(cudaGetSymbolAddress((void **)&w_arr, fc1));
+
+    init_affine_layer<D><<<fc1_grid_w, fc1_block_w>>>(w_arr, 125, d_state);
+    cudaDeviceSynchronize();
 
     dim3 fc1_block_b(20, 1);
     dim3 fc1_grid_b(50, 1);
-    init_bias<<<fc1_grid_b, fc1_block_b>>>(b1, 10, d_state);
+    checkCudaErrors(cudaGetSymbolAddress((void **)&b_arr, b1));
+    init_bias<<<fc1_grid_b, fc1_block_b>>>(b_arr, 1, d_state);
+    cudaDeviceSynchronize();
 
     // init fc2 
     dim3 fc2_block_w(100, 1);
     dim3 fc2_grid_w(20, 1);
-    init_affine_layer<C, H><<<fc2_grid_w, fc2_block_w>>>(fc2, 5, d_state);
+    checkCudaErrors(cudaGetSymbolAddress((void **)&w_arr, fc2));
+    init_affine_layer<H><<<fc2_grid_w, fc2_block_w>>>(w_arr, 5, d_state);
+    cudaDeviceSynchronize();
 
     dim3 fc2_block_b(10, 1);
     dim3 fc2_grid_b(1, 1);
-    init_bias<<<fc2_grid_b, fc2_block_b>>>(b2, 1, d_state);
+    checkCudaErrors(cudaGetSymbolAddress((void **)&b_arr, b2));
+    init_bias<<<fc2_grid_b, fc2_block_b>>>(b_arr, 1, d_state);
+    cudaDeviceSynchronize();
 
     // sync data from gpu to cpu 
     checkCudaErrors(cudaMemcpyFromSymbol(&h_fc1, fc1, H * D * sizeof(float)));
