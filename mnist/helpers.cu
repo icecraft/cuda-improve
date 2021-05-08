@@ -120,14 +120,14 @@ void sync_mnist_model_to_gpu() {
 template <int N, int M> void update_matrix(float dmatrix[N][M], float det[N][M], float lr) {
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < M; j++) {
-            dmatrix[i][j] += lr * det[i][j];
+            dmatrix[i][j] -= lr * det[i][j];
         }
     }
 }
 
 template <int N> void update_array(float darr[N], float det[N], float lr) {
     for (int i = 0; i < N; i++) {
-        darr[i] += lr * det[i];
+        darr[i] -= lr * det[i];
     }
 }
 

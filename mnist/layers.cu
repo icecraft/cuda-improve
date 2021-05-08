@@ -48,10 +48,7 @@ for (int i=0; i < M; i++) {
 // get deviration of bias
 #pragma unroll
 for (int i=0; i < N; i++) {
-    dbias[i] = 0;
-    for (int j=0; j < M; j++) {
-        dbias[i] += dout[i];
-    }
+    dbias[i] = dout[i];
 }
 
 // get deviration of matrix
@@ -76,10 +73,7 @@ for (int i=0; i < M; i++) {
 // get deviration of bias
 #pragma unroll
 for (int i=0; i < N; i++) {
-    dbias[i] = 0;
-    for (int j=0; j < M; j++) {
-        dbias[i] += dout[i];
-    }
+    dbias[i] = dout[i];
 }
 
 // get deviration of matrix
@@ -100,30 +94,30 @@ template <int N> __device__ void relu_forward(float data[], float ret[]) {
 
 template <int N> __device__ void relu_backward(float data[], float dout[], float ret[]) {
 #pragma unroll 
-for (int i=0; i < N; i++) {
-    ret[i] = data[i] > 0 ? dout[i]:0;
-}
+    for (int i=0; i < N; i++) {
+        ret[i] = data[i] > 0 ? dout[i]:0;
+    }
 }
 
 template <int N> __device__ void softmax_loss(float data[], int label, float *loss, float grad[]) {
-float mm = data[0];
+    float mm = data[0];
 #pragma unroll
     for (int i=0; i < N; i++) {
         mm = fmaxf(mm, data[i]);
     }
 
-float esum = 0;
+    float esum = 0;
 #pragma unroll
     for (int i=0; i < N; i++) {
-        grad[i] =  expf(data[i]-mm);
+        grad[i] =  expf(data[i]/mm);
         esum += grad[i];
     }
-*loss = logf(esum/grad[label]);
-
 #pragma unroll 
     for (int i=0; i < N; i++) {
         grad[i] = grad[i]/esum;
     }
+
+    *loss = -logf(grad[label]);
     grad[label] -= 1;
 }
 
@@ -145,9 +139,10 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
         softmax_loss<C>(ret_fc2, MNIST_label[i], &loss, d_softmax);
         total_loss += loss;
         // backward
-        affine_backward_fc1<C, H>(ret_relu, d_softmax, d_fc2_data, d_fc2_b, d_fc2_w);
-        relu_backward<H>(ret_fc1, d_fc2_data, d_relu);
+       
         affine_backward_fc2<H, D>(MNIST_data[i], d_relu, d_fc1_data, d_fc1_b, d_fc1_w);
+        relu_backward<H>(ret_fc1, d_fc2_data, d_relu);
+        affine_backward_fc1<C, H>(ret_relu, d_softmax, d_fc2_data, d_fc2_b, d_fc2_w);
 
         // sum grad and bias
         for (int j=0; j<H; j++) {
