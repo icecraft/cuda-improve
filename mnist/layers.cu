@@ -233,7 +233,7 @@ void train_mnist() {
 
     // train 10 epoch for test
     for (int i=0; i<10; i++) {
-        train_mnist_cuda2<33><<< grid, block >>>(); 
+        train_mnist_cuda<33><<< grid, block >>>(); 
         cudaDeviceSynchronize(); 
         update_mnist_model(0.02);
     }

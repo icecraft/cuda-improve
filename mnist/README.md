@@ -72,3 +72,7 @@ print("loss: %f")
 ## 总结
 
 * 本实现性能不好，L1 和 L2 cache、shared memory 均不能起到有效的作用。 constant memory 完全没有被使用到
+* bugs:
+  * __device__ float arr[100] 中的 arr 是符号，不能把 arr 当作指针
+  * cuda function 中 auto variable 占用空间过大会导致 kernel 启动错误（错误信息没有没有任何 debug 意义）
+  

@@ -70,29 +70,29 @@ __global__ void init_bias(float bias[], int size, curandState state[]) {
 // 128 * 20 * 300
 void init_mnist_network() {
     curandState *d_state;
-    checkCudaErrors(cudaMalloc(&d_state, 128 * 49 * sizeof(curandState)));
+    checkCudaErrors(cudaMalloc(&d_state, 784 * 30 * sizeof(curandState)));
 
     float *b_arr;
 
     // init fc1 
-    dim3 fc1_block_w(128, 1);
+    dim3 fc1_block_w(32, 1);
     dim3 fc1_grid_w(49, 1);
-    init_affine_layer_fc1<D><<<fc1_grid_w, fc1_block_w>>>(125, d_state);
+    init_affine_layer_fc1<D><<<fc1_grid_w, fc1_block_w>>>(15, d_state);
     cudaDeviceSynchronize();
 
-    dim3 fc1_block_b(20, 1);
-    dim3 fc1_grid_b(50, 1);
+    dim3 fc1_block_b(H, 1);
+    dim3 fc1_grid_b(1, 1);
     checkCudaErrors(cudaGetSymbolAddress((void **)&b_arr, b1));
     init_bias<<<fc1_grid_b, fc1_block_b>>>(b_arr, 1, d_state);
     cudaDeviceSynchronize();
 
     // init fc2 
-    dim3 fc2_block_w(100, 1);
-    dim3 fc2_grid_w(20, 1);
-    init_affine_layer_fc2<H><<<fc2_grid_w, fc2_block_w>>>(5, d_state);
+    dim3 fc2_block_w(H, 1);
+    dim3 fc2_grid_w(C, 1);
+    init_affine_layer_fc2<H><<<fc2_grid_w, fc2_block_w>>>(1, d_state);
     cudaDeviceSynchronize();
 
-    dim3 fc2_block_b(10, 1);
+    dim3 fc2_block_b(C, 1);
     dim3 fc2_grid_b(1, 1);
     checkCudaErrors(cudaGetSymbolAddress((void **)&b_arr, b2));
     init_bias<<<fc2_grid_b, fc2_block_b>>>(b_arr, 1, d_state);
