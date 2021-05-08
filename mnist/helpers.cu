@@ -27,15 +27,23 @@ void reset_mnist_grad() {
     checkCudaErrors(cudaMemcpyToSymbol(d_g_d_fc2_b, &h_g_d_fc2_b, C*sizeof(float)));
 }
 
-template <int M> __global__ void init_affine_layer(float layer[][M], int size, curandState state[]) {
+template <int M> __global__ void init_affine_layer_fc1(int size, curandState state[]) {
     int seq = blockIdx.x * blockDim.x * blockDim.y + threadIdx.x;
     curand_init(1234, seq, 0, &state[seq]);
 #pragma unroll
     for (int i=seq*size; i<(seq+1)*size; i++) {
-        layer[i/M][i%M] = curand_uniform(state+seq);
+        fc1[i/M][i%M] = curand_uniform(state+seq);
     }
 }
 
+template <int M> __global__ void init_affine_layer_fc2(int size, curandState state[]) {
+    int seq = blockIdx.x * blockDim.x * blockDim.y + threadIdx.x;
+    curand_init(1234, seq, 0, &state[seq]);
+#pragma unroll
+    for (int i=seq*size; i<(seq+1)*size; i++) {
+        fc2[i/M][i%M] = curand_uniform(state+seq);
+    }
+}
 
 __global__ void init_bias(float bias[], int size, curandState state[]) {
     int seq = blockIdx.x * blockDim.x + threadIdx.x;
@@ -51,14 +59,12 @@ void init_mnist_network() {
     curandState *d_state;
     checkCudaErrors(cudaMalloc(&d_state, 128 * 49 * sizeof(curandState)));
 
-    float* w_fc1[D], *w_fc2[H], *b_arr;
+    float *b_arr;
 
     // init fc1 
     dim3 fc1_block_w(128, 1);
     dim3 fc1_grid_w(49, 1);
-    checkCudaErrors(cudaGetSymbolAddress((void **)&w_fc1, fc1));
-
-    init_affine_layer<D><<<fc1_grid_w, fc1_block_w>>>(w_fc1, 125, d_state);
+    init_affine_layer_fc1<D><<<fc1_grid_w, fc1_block_w>>>(125, d_state);
     cudaDeviceSynchronize();
 
     dim3 fc1_block_b(20, 1);
@@ -70,8 +76,7 @@ void init_mnist_network() {
     // init fc2 
     dim3 fc2_block_w(100, 1);
     dim3 fc2_grid_w(20, 1);
-    checkCudaErrors(cudaGetSymbolAddress((void **)&w_fc2, fc2));
-    init_affine_layer<H><<<fc2_grid_w, fc2_block_w>>>(w_fc2, 5, d_state);
+    init_affine_layer_fc2<H><<<fc2_grid_w, fc2_block_w>>>(5, d_state);
     cudaDeviceSynchronize();
 
     dim3 fc2_block_b(10, 1);
