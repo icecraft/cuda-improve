@@ -9,6 +9,15 @@
 #include <helper_cuda.h>
 #include <stdlib.h>
 
+template <int N, int M> randomDumpMatrixEle(float layer [][M], int nums) {
+    int total = N * M, tmp;
+    for (int i=0; i < nums; i++) {
+        tmp = rand() % total;
+        printf(" %f ", layer[tmp/M][tmp%M]);
+    }
+    printf("\n");
+}
+
 void get_mnist_grad() {
     checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc1_w, d_g_d_fc1_w, H*D*sizeof(float)));
     checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc1_b, d_g_d_fc1_b, H*sizeof(float)));
@@ -139,13 +148,3 @@ void update_mnist_model(float lr) {
     reset_mnist_grad();
 }
 
-
-
-template <int N, int M> randomDumpMatrixEle(float layer [][M], int nums) {
-    int total = N * M, tmp;
-    for (int i=0; i < nums; i++) {
-        tmp = rand() % total;
-        printf(" %f ", layer[tmp/M][tmp%M]);
-    }
-    printf("\n");
-}
