@@ -123,6 +123,7 @@ float esum = 0;
     for (int i=0; i < N; i++) {
         grad[i] = grad[i]/esum -1;
     }
+    printf("%f %f\n", mm, data[label]);
     *loss = logf(esum/grad[label]);
 }
 
@@ -203,8 +204,8 @@ void train_mnist() {
     // random initialize fc1, fc2
     init_mnist_network();
 
-    dim3 block(128, 1);
-    dim3 grid(14, 1);
+    dim3 block(32, 1); // 128
+    dim3 grid(1, 1); // 14
 
     // train 10 epoch for test
     for (int i=0; i<10; i++) {
