@@ -84,8 +84,6 @@ void init_mnist_network() {
     curandState *d_state;
     checkCudaErrors(cudaMalloc(&d_state, 784 * 30 * sizeof(curandState)));
 
-    float *b_arr;
-
     // init fc1 
     dim3 fc1_block_w(32, 1);
     dim3 fc1_grid_w(49, 1);
@@ -93,8 +91,7 @@ void init_mnist_network() {
     cudaDeviceSynchronize();
 
     memset(h_b1, 0, H * sizeof(int));
-
-
+    
     // init fc2 
     dim3 fc2_block_w(H, 1);
     dim3 fc2_grid_w(C, 1);
@@ -123,28 +120,30 @@ void sync_mnist_model_to_gpu() {
 }
 
 
-template <int N, int M> void update_matrix(float dmatrix[N][M], float det[N][M], float lr) {
+template <int N, int M> void update_matrix(float dmatrix[N][M], float det[N][M], float lr, float reg) {
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < M; j++) {
+            dmatrix[i][j] *= (1 - reg);
             dmatrix[i][j] -= lr * det[i][j]/TC ;
         }
     }
 }
 
-template <int N> void update_array(float darr[N], float det[N], float lr) {
+template <int N> void update_array(float darr[N], float det[N], float lr, float reg) {
     for (int i = 0; i < N; i++) {
+        darr[i] *= (1 - reg);
         darr[i] -= lr * det[i]/TC;
     }
 }
 
-void update_mnist_model(float lr) {
+void update_mnist_model(float lr, float reg) {
     get_mnist_grad();
     printf("loss: %f, accuracy: %f\n", h_loss, float(h_count)/TNN);
 
-    update_matrix<H, D>(h_fc1, h_g_d_fc1_w, lr);
-    update_array<H>(h_b1, h_g_d_fc1_b, lr);
-    update_matrix<C, H>(h_fc2, h_g_d_fc2_w, lr);
-    update_array<C>(h_b2, h_g_d_fc2_b, lr);
+    update_matrix<H, D>(h_fc1, h_g_d_fc1_w, lr, reg);
+    update_array<H>(h_b1, h_g_d_fc1_b, lr, reg);
+    update_matrix<C, H>(h_fc2, h_g_d_fc2_w, lr, reg);
+    update_array<C>(h_b2, h_g_d_fc2_b, lr, reg);
     // randomDumpMatrixEle<C, H>(h_g_d_fc2_w, 10, lr);
     // randomDumpMatrixEle<H, D>(h_g_d_fc1_w, 10, 1.0);
     // dumpMatrixEle<C, H>(h_g_d_fc2_w);

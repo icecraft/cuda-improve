@@ -242,6 +242,6 @@ void train_mnist() {
             predict_mnist_cuda<15><<<p_grid, p_block>>>(); 
         }
         cudaDeviceSynchronize();
-        update_mnist_model(0.3);
+        update_mnist_model(0.1, 0.25);
     }
 }
