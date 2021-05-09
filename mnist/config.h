@@ -8,4 +8,5 @@ const int H = 30;
 const int C = 10;
 
 const int TNN = 9600;
+const int TC = NN;
 #endif

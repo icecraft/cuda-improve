@@ -144,20 +144,21 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
         relu_backward<H>(ret_fc1, d_fc2_data, d_relu);
         affine_backward_fc1<H, D>(MNIST_data[i], d_relu, d_fc1_data, d_fc1_b, d_fc1_w);
 
+
         // sum grad and bias
         for (int j=0; j<H; j++) {
             for (int k=0; k<D; k++) {
-                s_d_fc1_w[j][k] += d_fc1_w[j][k]/NN;
+                s_d_fc1_w[j][k] += d_fc1_w[j][k];
             }
-            s_d_fc1_b[j] += d_fc1_b[j]/NN;
+            s_d_fc1_b[j] += d_fc1_b[j];
         }
 
             // sum grad and bias
         for (int j=0; j<C; j++) {
             for (int k=0; k<H; k++) {
-                s_d_fc2_w[j][k] += d_fc2_w[j][k]/NN;
+                s_d_fc2_w[j][k] += d_fc2_w[j][k];
             }
-            s_d_fc2_b[j] += d_fc2_b[j]/NN;
+            s_d_fc2_b[j] += d_fc2_b[j];
         }
     }
 
@@ -166,25 +167,21 @@ template <int DATA_PER_THREAD> __global__ void train_mnist_cuda(void) {
 #pragma unroll 
     for (int j=0; j<H; j++) {
         for (int k=0; k<D; k++) {
-              __threadfence();
-             d_g_d_fc1_w[j][k] += s_d_fc1_w[j][k];
+             atomicAdd(&d_g_d_fc1_w[j][k], s_d_fc1_w[j][k]);
         }
-          __threadfence();
-        d_g_d_fc1_b[j] += s_d_fc1_b[j];
+
+        atomicAdd(&d_g_d_fc1_b[j], s_d_fc1_b[j]);
     }
 
     // sum fc2 network grad
 #pragma unroll 
     for (int j=0; j<C; j++) {
         for (int k=0; k<H; k++) {
-              __threadfence();
-            d_g_d_fc2_w[j][k] += s_d_fc2_w[j][k];
+            atomicAdd(&d_g_d_fc2_w[j][k], s_d_fc2_w[j][k]);
         }
-          __threadfence();
-        d_g_d_fc2_b[j] += s_d_fc2_b[j];
+        atomicAdd(&d_g_d_fc2_b[j], s_d_fc2_b[j]);
     }
-  __threadfence();
-    d_loss += total_loss;
+    atomicAdd(&d_loss, total_loss);
   return;
 }
 
@@ -193,8 +190,8 @@ template <int DATA_PER_THREAD> __global__ void predict_mnist_cuda(void) {
     int seq = blockIdx.x * blockDim.x + threadIdx.x;
 
     float ret_fc1[H], ret_fc2[C], ret_relu[H];
-    int count = 0, label_index;
-    float mm, tmp;
+    int label_index;
+    float mm, tmp, count =0.0;
 
 #pragma unroll 
     for (int i=seq*DATA_PER_THREAD; i < (seq+1)*DATA_PER_THREAD; i++) {
@@ -213,10 +210,10 @@ template <int DATA_PER_THREAD> __global__ void predict_mnist_cuda(void) {
         for (int i=0; i < C; i++) {
             tmp = fmaxf(tmp, ret_fc2[i]);
         }
-        count += mm == tmp ? 1 : 0;
+        count += mm == tmp ? 1.0 : 0;
     }
       __threadfence();
-    d_count += count;
+    atomicAdd(&d_count, count);
   return;
 }
 
@@ -232,13 +229,19 @@ void train_mnist() {
     // random initialize fc1, fc2
     init_mnist_network();
 
-    dim3 block(128, 1); // 128
-    dim3 grid(14, 1); // 14
+    dim3 block(256, 1); // 128
+    dim3 grid(7, 1); // 14
+
+    dim3 p_block(128, 1); // 128
+    dim3 p_grid(5, 1); // 14
 
     // train 10 epoch for test
-    for (int i=0; i<1000; i++) {
+    for (int i=0; i<200; i++) {
         train_mnist_cuda<33><<< grid, block >>>(); 
-        cudaDeviceSynchronize(); 
-        update_mnist_model(0.0001);
+        if (i % 20 == 0) {
+            predict_mnist_cuda<15><<<p_grid, p_block>>>(); 
+        }
+        cudaDeviceSynchronize();
+        update_mnist_model(0.3);
     }
 }

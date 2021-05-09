@@ -9,11 +9,28 @@
 #include <helper_cuda.h>
 #include <stdlib.h>
 
-template <int N, int M> void randomDumpMatrixEle(float layer [][M], int nums) {
+template <int N, int M> void randomDumpMatrixEle(float layer [][M], int nums, float scale) {
+    srand (0);
     int total = N * M, tmp;
     for (int i=0; i < nums; i++) {
         tmp = rand() % total;
-        printf(" %f ", layer[tmp/M][tmp%M]);
+        printf(" %0.4f ", layer[tmp/M][tmp%M]*scale);
+    }
+    printf("\n");
+}
+
+template <int N, int M> void dumpMatrixEle(float layer [][M]) {
+    for (int i=0; i < N; i++) {
+        for (int j=0; j < M; j++) {
+            printf(" %0.2f ", layer[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+ void dumpArray(float arr[], int n) {
+    for (int i = 0; i < n; i++) {
+        printf("%0.2f ", arr[i]);
     }
     printf("\n");
 }
@@ -24,7 +41,7 @@ void get_mnist_grad() {
     checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc2_w, d_g_d_fc2_w, H*C*sizeof(float)));
     checkCudaErrors(cudaMemcpyFromSymbol(&h_g_d_fc2_b, d_g_d_fc2_b, C*sizeof(float)));
     checkCudaErrors(cudaMemcpyFromSymbol(&h_loss, d_loss, sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(&h_count, d_count, sizeof(int)));
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_count, d_count, sizeof(float)));
 }
 
 void reset_mnist_grad() {
@@ -40,7 +57,7 @@ void reset_mnist_grad() {
     checkCudaErrors(cudaMemcpyToSymbol(d_g_d_fc2_w, &h_g_d_fc2_w, H*C*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(d_g_d_fc2_b, &h_g_d_fc2_b, C*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(d_loss, &h_loss, sizeof(float)));
-    checkCudaErrors(cudaMemcpyToSymbol(d_count, &h_count, sizeof(int)));
+    checkCudaErrors(cudaMemcpyToSymbol(d_count, &h_count, sizeof(float)));
 }
 
 template <int M> __global__ void init_affine_layer_fc1(int size, curandState state[]) {
@@ -61,14 +78,6 @@ template <int M> __global__ void init_affine_layer_fc2(int size, curandState sta
     }
 }
 
-__global__ void init_bias(float bias[], int size, curandState state[]) {
-    int seq = blockIdx.x * blockDim.x + threadIdx.x;
-    curand_init(1234, seq, 0, &state[seq]);
-#pragma unroll
-    for (int i=seq*size; i<(seq+1)*size; i++) {
-        bias[i] = curand_uniform(state+seq);
-    }
-}
 
 // 128 * 20 * 300
 void init_mnist_network() {
@@ -83,11 +92,8 @@ void init_mnist_network() {
     init_affine_layer_fc1<D><<<fc1_grid_w, fc1_block_w>>>(15, d_state);
     cudaDeviceSynchronize();
 
-    dim3 fc1_block_b(H, 1);
-    dim3 fc1_grid_b(1, 1);
-    checkCudaErrors(cudaGetSymbolAddress((void **)&b_arr, b1));
-    init_bias<<<fc1_grid_b, fc1_block_b>>>(b_arr, 1, d_state);
-    cudaDeviceSynchronize();
+    memset(h_b1, 0, H * sizeof(int));
+
 
     // init fc2 
     dim3 fc2_block_w(H, 1);
@@ -95,17 +101,14 @@ void init_mnist_network() {
     init_affine_layer_fc2<H><<<fc2_grid_w, fc2_block_w>>>(1, d_state);
     cudaDeviceSynchronize();
 
-    dim3 fc2_block_b(C, 1);
-    dim3 fc2_grid_b(1, 1);
-    checkCudaErrors(cudaGetSymbolAddress((void **)&b_arr, b2));
-    init_bias<<<fc2_grid_b, fc2_block_b>>>(b_arr, 1, d_state);
-    cudaDeviceSynchronize();
+    memset(h_b2, 0, C * sizeof(int));
+
 
     // sync data from gpu to cpu 
     checkCudaErrors(cudaMemcpyFromSymbol(&h_fc1, fc1, H * D * sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(&h_b1, b1, H * sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(b1, &h_b1, H * sizeof(float)));
     checkCudaErrors(cudaMemcpyFromSymbol(&h_fc2, fc2, C * H * sizeof(float)));
-    checkCudaErrors(cudaMemcpyFromSymbol(&h_b2, b2, C * sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(b2, &h_b2, C * sizeof(float)));
 
     // free resource
     checkCudaErrors(cudaFree(d_state));
@@ -123,14 +126,14 @@ void sync_mnist_model_to_gpu() {
 template <int N, int M> void update_matrix(float dmatrix[N][M], float det[N][M], float lr) {
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < M; j++) {
-            dmatrix[i][j] -= lr * det[i][j];
+            dmatrix[i][j] -= lr * det[i][j]/TC ;
         }
     }
 }
 
 template <int N> void update_array(float darr[N], float det[N], float lr) {
     for (int i = 0; i < N; i++) {
-        darr[i] -= lr * det[i];
+        darr[i] -= lr * det[i]/TC;
     }
 }
 
@@ -142,8 +145,15 @@ void update_mnist_model(float lr) {
     update_array<H>(h_b1, h_g_d_fc1_b, lr);
     update_matrix<C, H>(h_fc2, h_g_d_fc2_w, lr);
     update_array<C>(h_b2, h_g_d_fc2_b, lr);
+    // randomDumpMatrixEle<C, H>(h_g_d_fc2_w, 10, lr);
+    // randomDumpMatrixEle<H, D>(h_g_d_fc1_w, 10, 1.0);
+    // dumpMatrixEle<C, H>(h_g_d_fc2_w);
 
     sync_mnist_model_to_gpu();
+ 
     reset_mnist_grad();
+    //randomDumpMatrixEle<C, H>(h_fc2, 10, 1.0);
+    //randomDumpMatrixEle<H, D>(h_fc1, 10, 1.0);
+
 }
 

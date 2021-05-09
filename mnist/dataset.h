@@ -12,10 +12,10 @@ https://github.com/takafumihoriuchi/MNIST_for_C
 #include <string.h>
 
 // set appropriate path for data
-#define TRAIN_IMAGE "./data/train-images-idx3-ubyte"
-#define TRAIN_LABEL "./data/train-labels-idx1-ubyte"
-#define TEST_IMAGE "./data/t10k-images-idx3-ubyte"
-#define TEST_LABEL "./data/t10k-labels-idx1-ubyte"
+const char * TRAIN_IMAGE = "./data/train-images-idx3-ubyte";
+const char * TRAIN_LABEL = "./data/train-labels-idx1-ubyte";
+const char * TEST_IMAGE =  "./data/t10k-images-idx3-ubyte";
+const char * TEST_LABEL = "./data/t10k-labels-idx1-ubyte";
 
 #define SIZE 784 // 28*28
 #define NUM_TRAIN 60000
@@ -62,7 +62,7 @@ void FlipLong(unsigned char * ptr)
 }
 
 
-template <int N> void read_mnist_char(char *file_path, int num_data, int len_info, int arr_n, unsigned char data_char[][N], int info_arr[])
+template <int N> void read_mnist_char(const char *file_path, int num_data, int len_info, int arr_n, unsigned char data_char[][N], int info_arr[])
 {
     int fd;
     unsigned char *ptr;
@@ -123,7 +123,7 @@ void load_mnist()
 }
 
 
-void print_mnist_pixel(double data_image[][SIZE], int num_data)
+void print_mnist_pixel(float data_image[][SIZE], int num_data)
 {
     int i, j;
     for (i=0; i<num_data; i++) {
@@ -194,7 +194,7 @@ void save_mnist_pgm(double data_image[][SIZE], int index)
         }
     }
 
-    save_image(n, "");
+    save_image(n, "tmp.png");
 }
 
 #endif
